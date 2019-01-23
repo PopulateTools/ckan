@@ -554,24 +554,10 @@ def set_datastore_active_flag(model, data_dict, flag):
 
     model.Session.commit()
 
-    # get package with  updated resource from solr
-    # find changed resource, patch it and reindex package
-    psi = search.PackageSearchIndex()
-    solr_query = search.PackageSearchQuery()
-    q = {
-        'q': 'id:"{0}"'.format(package_id),
-        'fl': 'data_dict',
-        'wt': 'json',
-        'fq': 'site_id:"%s"' % config.get('ckan.site_id'),
-        'rows': 1
-    }
-    for record in solr_query.run(q)['results']:
-        solr_data_dict = json.loads(record['data_dict'])
-        for resource in solr_data_dict['resources']:
-            if resource['id'] == data_dict['resource_id']:
-                resource.update(update_dict)
-                psi.index_package(solr_data_dict)
-                break
+    # reindex complete package to avoid race condition
+    log.info('Resource %s set datastore_active to %s. Reindexing package %s'
+                % (data_dict['resource_id'], flag, package_id))
+    search.rebuild(package_id=package_id, force=True)
 
 
 def _resource_exists(context, data_dict):
