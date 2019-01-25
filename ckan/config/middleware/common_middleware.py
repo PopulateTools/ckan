@@ -6,9 +6,11 @@ import urllib2
 import hashlib
 import json
 import cgi
+import re
 
 import sqlalchemy as sa
 from webob.request import FakeCGIBody
+from ckan.common import config
 
 
 class RootPathMiddleware(object):
@@ -74,6 +76,24 @@ class TrackingMiddleware(object):
             for part in parts:
                 k, v = part.split('=')
                 data[k] = urllib2.unquote(v).decode("utf8")
+
+            # patch
+            # If CKAN runs with a root_path there's a problem with the URLs stored in the tracks
+            # The root_path should be removed from the stored URLs
+            root_path = config.get('ckan.root_path', None)
+            if root_path:
+                # convert the root_path to a regular expression by replacing {{LANG}} by [^\/]+
+                # Example: if the root_path is `/data-portal/ckan/{{LANG}}` we want to remove that
+                # part from the URL, applying this regular expression to this string:
+                #   reg = '/data-portal/ckan/[^\/]+'
+                #
+                # Appplying gsub with that regular expression the url is converted:
+                #   - from: /data-portal/ckan/en/datasets/foo
+                #   - to:   /datasets/foo
+                reg = re.sub('{{LANG}}', '[^\/]+', root_path)
+                data['url'] = re.sub(reg, '', data.get('url'))
+            # /end patch
+
             start_response('200 OK', [('Content-Type', 'text/html')])
             # we want a unique anonomized key for each user so that we do
             # not count multiple clicks from the same user.
