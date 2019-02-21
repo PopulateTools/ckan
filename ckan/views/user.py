@@ -541,7 +541,7 @@ class RequestResetView(MethodView):
                 h.flash_success(
                     _(u'Please check your inbox for '
                       u'a reset code.'))
-                return h.redirect_to(u'/')
+                return h.redirect_to(controller='home', action='index')
             except mailer.MailerException as e:
                 h.flash_error(_(u'Could not send reset link: %s') %
                               text_type(e))
