@@ -134,10 +134,9 @@ def make_pylons_stack(conf, full_stack=True, static_files=True,
     )
 
     # Establish the Registry for this application
-    # The RegistryManager includes code to pop
-    # registry values after the stream has completed,
-    # so we need to prevent this with `streaming` set to True.
-    app = RegistryManager(app, streaming=True)
+    # FIX: disable streaming to prevend exeption "Popped wrong app context"
+    # https://github.com/ckan/ckan/pull/4657/commits/42713323bf2f54cf3529f52415c2a910ea99db7d
+    app = RegistryManager(app, streaming=False)
 
     if asbool(static_files):
         # Serve static files
